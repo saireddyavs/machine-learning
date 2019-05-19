@@ -17,7 +17,7 @@ y=iris.iloc[1:,4:]
 x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2)
 
 cv_scores = []
-neighbors = list(np.arange(3,50,4))
+neighbors = list(np.arange(3,50,2))
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 
@@ -30,6 +30,10 @@ for n in neighbors:
     
 error = [1-x for x in cv_scores]
 optimal_n = neighbors[ error.index(min(error)) ]
+print("*"*50,optimal_n)
+optimal_n1=neighbors[np.argmax(cv_scores)]
+print("*"*50,optimal_n1)
+
 knn_optimal = KNeighborsClassifier(n_neighbors = optimal_n,algorithm = 'brute')
 knn_optimal.fit(x_train,y_train)
 pred = knn_optimal.predict(x_test)
@@ -46,35 +50,79 @@ from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import unique_labels
 cm = confusion_matrix(y_test, pred)
 print(cm)
-cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-classes=col[:,np.newaxis]
-classes = classes[unique_labels(y_test, pred)]
-fig, ax = plt.subplots()
-im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
-ax.figure.colorbar(im, ax=ax)
-    # We want to show all ticks...
-ax.set(xticks=np.arange(cm.shape[1]),
-           yticks=np.arange(cm.shape[0]),
-           # ... and label them with the respective list entries
-           xticklabels=classes, yticklabels=classes,
-           title=title,
-           ylabel='True label',
-           xlabel='Predicted label')
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-    # Rotate the tick labels and set their alignment.
-plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
+clf = SVC(kernel = 'linear').fit(x_train,y_train)
+clf.predict(x_train)
+y_pred = clf.predict(x_test)
 
-    # Loop over data dimensions and create text annotations.
-fmt = '.2f' if normalize else 'd'
-thresh = cm.max() / 2.
-for i in range(cm.shape[0]):
-    for j in range(cm.shape[1]):
-        ax.text(j, i, format(cm[i, j], fmt),
-            ha="center", va="center",
-            color="white" if cm[i, j] > thresh else "black")
-fig.tight_layout()
+# Creates a confusion matrix
+cm = confusion_matrix(y_test, y_pred) 
+
+# Transform to df for easier plotting
+cm_df = pd.DataFrame(cm,
+                     index = ['setosa','versicolor','virginica'], 
+                     columns = ['setosa','versicolor','virginica'])
+
+#plt.figure(figsize=(5.5,4))
+sns.heatmap(cm_df, annot=True)
+plt.title('Accuracy using brute:{0:.3f}'.format(accuracy_score(y_test, y_pred)))
+plt.ylabel('Actual label')
+plt.xlabel('Predicted label')
 plt.show()
 
+print("using kd-tree")
+import warnings
+warnings.filterwarnings("ignore")
 
+for n in neighbors:
+    knn = KNeighborsClassifier(n_neighbors = n,algorithm = 'kd_tree')
+    #knn = KNeighborsClassifier(n_neighbors = n,algorithm = 'kd_tree',leaf_size = 30)
+    cross_val = cross_val_score(knn,x_train,y_train,cv = 5 , scoring = 'accuracy')
+    cv_scores.append(cross_val.mean())
+    
+error = [1-x for x in cv_scores]
+optimal_n = neighbors[ error.index(min(error)) ]
+knn_optimal = KNeighborsClassifier(n_neighbors = optimal_n,algorithm = 'kd_tree')
+knn_optimal.fit(x_train,y_train)
+pred = knn_optimal.predict(x_test)
+acc = accuracy_score(y_test,pred)*100
+
+print("The accuracy for optimal k = {0} using kd-tree is {1}".format(optimal_n,acc))
+
+from sklearn.metrics import classification_report
+print("classification_report")
+print(classification_report(y_test,pred))
+
+from sklearn.metrics import recall_score , precision_score , roc_auc_score ,roc_curve
+from sklearn.metrics import confusion_matrix
+from sklearn.utils.multiclass import unique_labels
+cm = confusion_matrix(y_test, pred)
+print(cm)
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+clf = SVC(kernel = 'linear').fit(x_train,y_train)
+clf.predict(x_train)
+y_pred = clf.predict(x_test)
+
+# Creates a confusion matrix
+cm = confusion_matrix(y_test, y_pred) 
+
+# Transform to df for easier plotting
+cm_df = pd.DataFrame(cm,
+                     index = ['setosa','versicolor','virginica'], 
+                     columns = ['setosa','versicolor','virginica'])
+
+#plt.figure(figsize=(5.5,4))
+sns.heatmap(cm_df, annot=True)
+plt.title('Accuracy using kd_tree:{0:.3f}'.format(accuracy_score(y_test, y_pred)))
+plt.ylabel('Actual label')
+plt.xlabel('Predicted label')
+plt.show()
 
