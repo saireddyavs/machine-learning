@@ -33,3 +33,4 @@ clf=MultinomialNB()
 clf.fit(X_train,y_train)
 y_pred=clf.predict(X_test)
 print("Multinomial Naive Bayes model accuracy(in %):", metrics.accuracy_score(y_test, y_pred)*100)#mutinomial if we cant count of particulars ,The multinomial Naive Bayes classifier is suitable for classification with discrete features (e.g., word counts for text classification). The multinomial distribution normally requires integer feature counts. However, in practice, fractional counts such as tf-idf may also work.
+#iris is gaussian
