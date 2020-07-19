@@ -1,1 +1,1 @@
-# applied-ai-programs
+# machine learning-programs
